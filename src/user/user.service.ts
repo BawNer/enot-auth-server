@@ -7,6 +7,8 @@ import { CreateUserDto } from "./dto/createUser.dto";
 import { UserResponseInteface } from "./types/responseUser.inteface";
 import { sign } from 'jsonwebtoken'
 import { JWT_SECRET } from "@app/config";
+import { LoginUserDto } from "./dto/loginUser.dto";
+import { compare } from 'bcrypt'
 
 @Injectable()
 export default class UserService {
@@ -19,8 +21,9 @@ export default class UserService {
     return uuid.v4()
   }
 
-  generateActivationLink(code: string) {
-    return `http://${process.env.SERVER_API}/activate/${code}`
+  async generateActivationLink(id: number): Promise<string> {
+    const user = await this.findById(id)
+    return `http://${process.env.SERVER_API}/activate/${user.activationLink}`
   }
 
   async createUser(createUserDto: CreateUserDto): Promise<UserEntity> {
@@ -41,6 +44,24 @@ export default class UserService {
     candidate.activationLink = this.generateActivationCode()
 
     return await this.userRepository.save(candidate)
+  }
+
+  async loginUser(loginUserDto: LoginUserDto): Promise<UserEntity> {
+    const user = await this.userRepository.findOne({login: loginUserDto.login}, {
+      select: ['id', 'username', 'login', 'password', 'bio', 'email', 'isEmailVerificate', 'photo', 'refreshToken', 'vkId', 'yandexId']
+    })
+
+    if (!user) {
+      throw new HttpException('Credintails are not valid', HttpStatus.FORBIDDEN)
+    }
+
+    const isPasswordCorrect = compare(loginUserDto.password, user.password)
+
+    if (!isPasswordCorrect) { throw new HttpException('Credentials are not valid', HttpStatus.UNPROCESSABLE_ENTITY) }
+
+    delete user.password
+
+    return user
   }
 
   async findById(id: number): Promise<UserEntity> {
