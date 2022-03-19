@@ -22,8 +22,17 @@ export default class UserController {
 
   @Get('activation/:code')
   async activateEmail(@Param('code') code: string): Promise<UserResponseInteface> {
-    const user= await this.userServise.activateEmail(code)
+    const user = await this.userServise.activateEmail(code)
     return this.userServise.buildResponse(user)
+  }
+
+  @Post('accept')
+  @UseGuards(AuthGuard)
+  async sendAcceptCode(@User('id') id: number): Promise<{accept: {status: string, email: string}}> {
+    const accept = await this.userServise.sendAcceptCode(id)
+    return {
+      accept
+    }
   }
 
 

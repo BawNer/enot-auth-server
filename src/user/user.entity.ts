@@ -38,6 +38,9 @@ export class UserEntity {
   @Column()
   activationLink: string
 
+  @Column({ default: null })
+  acceptCode: string
+
   @CreateDateColumn()
   createdAt: string
 

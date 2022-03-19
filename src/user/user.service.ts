@@ -36,7 +36,10 @@ export default class UserService {
 
   async generateActivationLink(id: number): Promise<string> {
     const user = await this.findById(id)
-    return `http://${process.env.SERVER_API}/user/activation/${user.activationLink}`
+    const code = this.generateActivationCode()
+    user.activationLink = code
+    await this.userRepository.save(user)
+    return `http://${process.env.SERVER_API}/user/activation/${code}`
   }
 
   async sendActiovationLink(id: number, email: string): Promise<string> {
@@ -68,6 +71,30 @@ export default class UserService {
     user.isEmailVerificate = true
 
     return await this.userRepository.save(user)
+  }
+
+  async sendAcceptCode(id: number): Promise<{status: string, email: string}> {
+    const user = await this.findById(id)
+    const code = this.generateActivationCode().split('-')[Math.floor(Math.random()*4)]
+    user.acceptCode = code
+    await this.userRepository.save(user)
+
+    await this.transporter.sendMail({
+      from: process.env.YANDEX_LOGIN_MAIL_SERVICE,
+      to: user.email,
+      subject: 'Проверочный код [Enot.Auth]',
+      html: `
+        <div>
+          <h1>Проверочный код:</h1>
+          <b>${code}</b>
+        </div>
+      `
+    })
+
+    return {
+      status: 'Success',
+      email: user.email
+    }
   }
 
   async createUser(createUserDto: CreateUserDto): Promise<UserEntity> {
