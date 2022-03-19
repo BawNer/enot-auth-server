@@ -4,18 +4,18 @@ import { UserResponseInteface } from "./types/responseUser.inteface";
 import { UserEntity } from "./user.entity";
 import UserService from "./user.service";
 
-@Controller()
+@Controller('user')
 export default class UserController {
   constructor (
     private readonly userServise: UserService
   ) {}
 
-  @Get('user/:code/activation')
+  @Get(':code/activation')
   async getActiovationLink(@Param('code') code: string): Promise<string> {
     return await this.userServise.generateActivationLink(code)
   }
 
-  @Post('user')
+  @Post('registration')
   @UsePipes(new ValidationPipe())
   async createUser(@Body('user') createUserDto: CreateUserDto): Promise<UserResponseInteface> {
     const user = await this.userServise.createUser(createUserDto)
