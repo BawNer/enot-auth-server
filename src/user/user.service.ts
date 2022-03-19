@@ -43,6 +43,15 @@ export default class UserService {
     return await this.userRepository.save(candidate)
   }
 
+  async findById(id: number): Promise<UserEntity> {
+    const user = await this.userRepository.findOne(id)
+    if (!user) {
+      throw new HttpException('Credintailas are not valid', HttpStatus.FORBIDDEN)
+    }
+
+    return user
+  }
+
   generateJWToken(user: UserEntity, expire: number): string {
     return sign({
       id: user.id,
