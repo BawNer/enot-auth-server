@@ -97,6 +97,19 @@ export default class UserService {
     }
   }
 
+  async validateAcceptCode(id: number, code: string): Promise<{accessToken: string}> {
+    const user = await this.findById(id)
+    if (user.acceptCode !== code) {
+      throw new HttpException('Code are not valid', HttpStatus.CONFLICT)
+    }
+    user.acceptCode = null
+    await this.userRepository.save(user)
+
+    return {
+      accessToken: this.generateJWToken(user, 15)
+    }
+  }
+
   async createUser(createUserDto: CreateUserDto): Promise<UserEntity> {
     const candidateLogin = await this.userRepository.findOne({login: createUserDto.login})
     const candidateEmail = await this.userRepository.findOne({email: createUserDto.email})

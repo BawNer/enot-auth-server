@@ -35,6 +35,12 @@ export default class UserController {
     }
   }
 
+  @Post('accept/:code')
+  @UseGuards(AuthGuard)
+  async validateCode(@User('id') id: number, @Param('code') code: string): Promise<{accessToken: string}> {
+    return await this.userServise.validateAcceptCode(id, code)
+  }
+
 
   @Post('registration')
   @UsePipes(new ValidationPipe())
