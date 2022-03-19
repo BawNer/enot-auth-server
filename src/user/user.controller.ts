@@ -14,13 +14,17 @@ export default class UserController {
     private readonly userServise: UserService
   ) {}
 
-  @Get('activation')
+  @Post('activation')
   @UseGuards(AuthGuard)
-  async getActiovationLink(@User('id') id: number): Promise<string> {
-    return await this.userServise.generateActivationLink(id)
+  async sendActivationLink(@User('id') id: number, @User('email') email: string): Promise<string> {
+    return await this.userServise.sendActiovationLink(id, email)
   }
 
-  // @Get('activation/:code') activate email service here
+  @Get('activation/:code')
+  async activateEmail(@Param('code') code: string): Promise<UserResponseInteface> {
+    const user= await this.userServise.activateEmail(code)
+    return this.userServise.buildResponse(user)
+  }
 
 
   @Post('registration')
@@ -40,7 +44,8 @@ export default class UserController {
   @Put()
   @UseGuards(AuthGuard)
   @UsePipes(new ValidationPipe())
-  async updateUser(@User('id') id: number, @Body('user') updateUserDto: UpdateUserDto): Promise<UserEntity> {
-    return await this.userServise.updateUser(updateUserDto, id)
+  async updateUser(@User('id') id: number, @Body('user') updateUserDto: UpdateUserDto): Promise<UserResponseInteface> {
+    const user =  await this.userServise.updateUser(updateUserDto, id)
+    return this.userServise.buildResponse(user)
   }
 }
