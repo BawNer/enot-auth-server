@@ -12,7 +12,7 @@ export class UserEntity {
   @Column()
   login: string
 
-  @Column()
+  @Column({ select: false })
   password: string
 
   @Column()
