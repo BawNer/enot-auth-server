@@ -224,6 +224,15 @@ export default class UserService {
       })
     }
 
+    if (
+      candidate.service == 'yandex'
+    ) {
+      const users = await this.userRepository.find({yandexId: Not(IsNull())})
+      users.forEach(userDB => {
+        user = userDB.yandexId.owner_id == candidate.owner_id ? userDB : null
+      })
+    }
+
     if (!user) {
       user = new UserEntity()
       if (candidate.service == 'vk') {
