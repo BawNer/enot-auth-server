@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Put, Query, Res, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { User } from "./decorators/user.decorator";
 import { CreateUserDto } from "./dto/createUser.dto";
 import { LoginUserDto } from "./dto/loginUser.dto";
@@ -7,6 +7,8 @@ import { AuthGuard } from "./guards/auth.guard";
 import { UserResponseInteface } from "./types/responseUser.inteface";
 import { UserEntity } from "./user.entity";
 import UserService from "./user.service";
+import { Response } from "express";
+import { CreateUserOAuthDto } from "./dto/createUserOAuth.dto";
 
 @Controller('user')
 export default class UserController {
@@ -61,6 +63,19 @@ export default class UserController {
   @UsePipes(new ValidationPipe())
   async updateUser(@User('id') id: number, @Body('user') updateUserDto: UpdateUserDto): Promise<UserResponseInteface> {
     const user =  await this.userServise.updateUser(updateUserDto, id)
+    return this.userServise.buildResponse(user)
+  }
+
+  @Get('oauth/verify?:code')
+  async getAccessTokenFromVK(@Query('code') code: string, @Res() res: Response): Promise<any> {
+    const tokenVK = await this.userServise.getAccessTokenFromVK(code)
+    const candidate = await this.userServise.getFiledsFromVK(tokenVK)
+    res.redirect(`http://localhost:8080/lk/oauth/vk?${new URLSearchParams(candidate).toString()}`)
+  }
+
+  @Post('oauth')
+  async oauthWithService(@Body('user') candidate: CreateUserOAuthDto): Promise<UserResponseInteface> {
+    const user = await this.userServise.oauthWithservices(candidate)
     return this.userServise.buildResponse(user)
   }
 }

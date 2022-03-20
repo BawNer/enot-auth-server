@@ -1,5 +1,6 @@
 import { BeforeInsert, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 import { hash } from 'bcrypt'
+import { OAuthUserType } from "./types/oauthUser.type";
 
 @Entity({ name: 'users' })
 export class UserEntity {
@@ -9,13 +10,13 @@ export class UserEntity {
   @Column()
   username: string
 
-  @Column()
+  @Column({ default: '' })
   login: string
 
-  @Column({ select: false })
+  @Column({ default: '', select: false })
   password: string
 
-  @Column()
+  @Column({ default: '' })
   email: string
 
   @BeforeInsert()
@@ -35,7 +36,7 @@ export class UserEntity {
   @Column({ default: false })
   isEmailVerificate: boolean
 
-  @Column()
+  @Column({default: null})
   activationLink: string
 
   @Column({ default: null })
@@ -48,8 +49,8 @@ export class UserEntity {
   updatedAt: string
 
   @Column({ type: 'simple-json', default: null })
-  yandexId: string
+  yandexId: OAuthUserType
 
   @Column({ type: 'simple-json', default: null })
-  vkId: string
+  vkId: OAuthUserType
 }

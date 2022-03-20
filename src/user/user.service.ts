@@ -1,6 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { IsNull, Not, Repository } from "typeorm";
 import { UserEntity } from "./user.entity";
 import * as uuid from 'uuid'
 import { CreateUserDto } from "./dto/createUser.dto";
@@ -8,13 +8,17 @@ import { UserResponseInteface } from "./types/responseUser.inteface";
 import { sign } from 'jsonwebtoken'
 import { JWT_SECRET } from "@app/config";
 import { LoginUserDto } from "./dto/loginUser.dto";
-import { compare } from 'bcrypt'
+import { compare } from 'bcrypt';
 import { UpdateUserDto } from "./dto/updateUser.dto";
-import * as nodemailer from 'nodemailer'
+import * as nodemailer from "nodemailer";
+import axios from "axios";
+import { CreateUserOAuthDto } from "./dto/createUserOAuth.dto";
+
 
 @Injectable()
 export default class UserService {
   private transporter
+
   constructor (
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>
@@ -191,6 +195,59 @@ export default class UserService {
         ...user,
         accessToken: this.generateJWToken(user, 15)
       }
+    }
+  }
+
+  async getAccessTokenFromVK(code: string): Promise<string> {
+    const link = `https://oauth.vk.com/access_token?client_id=${process.env.VK_APP_ID}&client_secret=${process.env.VK_APP_SECRET}&redirect_uri=http://localhost:3000/user/oauth/verify&code=${code}`
+    const result = await axios.get(link)
+    //https://oauth.vk.com/authorize?client_id=8108646&display=page&redirect_uri=http://localhost:3000/user/oauth/verify&scope=offline,profile,email&response_type=code&v=5.131
+    return result.data
+  }
+
+  async getFiledsFromVK(tokenVK: any): Promise<any> {
+    const {data} = await axios.get(`https://api.vk.com/method/account.getProfileInfo?owner_id=${tokenVK.user_id}&access_token=${tokenVK.access_token}&v=5.131`, {
+      transformRequest: res => res,
+      responseType: 'json'
+    })
+    return data.response
+  }
+
+  async oauthWithservices(candidate: CreateUserOAuthDto): Promise<UserEntity> {
+    let user = null
+    if (
+      candidate.service == 'vk'
+    ) {
+      const users = await this.userRepository.find({vkId: Not(IsNull())})
+      users.forEach(userDB => {
+        user = userDB.vkId.owner_id == candidate.owner_id ? userDB : null
+      })
+    }
+
+    if (!user) {
+      user = new UserEntity()
+      if (candidate.service == 'vk') {
+        Object.assign(user, {
+          username: `vk_user_${candidate.owner_id}`,
+          bio: candidate.bio,
+          vkId: {
+            owner_id: candidate.owner_id,
+            accessToken: candidate.accessToken
+          }
+        })
+      } else {
+        Object.assign(user, {
+          username: `yandex_user_${candidate.owner_id}`,
+          bio: candidate.bio,
+          vkId: {
+            owner_id: candidate.owner_id,
+            accessToken: candidate.accessToken
+          }
+        })
+      }
+      return this.userRepository.save(user)
+    } else {
+      return user
     }
   }
 }
